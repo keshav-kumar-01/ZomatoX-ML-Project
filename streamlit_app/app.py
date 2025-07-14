@@ -27,19 +27,22 @@ def load_models():
     price_scaler = joblib.load(scaler_path)
     return price_model, price_scaler
 
-# --- Load data & models ---
 df = load_data()
 price_model, price_scaler = load_models()
 
-# --- UI Header ---
+# --- Header ---
 st.title("🍽️ ZomatoX – Restaurant Intelligence Platform")
-st.markdown("Predict menu prices or explore top restaurants by cuisine and city.")
+st.markdown("Smart restaurant insights, price prediction, and recommendation system for business & consumers.")
 
-# --- Sidebar mode selection ---
+# --- Sidebar Mode Selection ---
 st.sidebar.title("🔍 Select Mode")
-mode = st.sidebar.radio("Choose what you want to do:", ["📌 Recommend Restaurants", "💡 Predict Menu Item Price"])
+mode = st.sidebar.radio("What would you like to explore?", [
+    "📌 Recommend Restaurants", 
+    "💡 Predict Menu Item Price", 
+    "📊 Cuisine Insights by City"
+])
 
-# --- Mode 1: Restaurant Recommendation ---
+# --- Mode 1: Recommendation System ---
 if mode == "📌 Recommend Restaurants":
     st.header("📌 Restaurant Recommender")
 
@@ -47,7 +50,6 @@ if mode == "📌 Recommend Restaurants":
     cuisine_input = st.selectbox("Select Cuisine", sorted(df['Cuisine'].unique()))
     sort_by = st.radio("Sort By", ["Average Rating", "Price (Low to High)", "Best Value"], horizontal=True)
 
-    # Filter DataFrame
     filtered_df = df[(df['City'] == city_input) & (df['Cuisine'] == cuisine_input)]
 
     if filtered_df.empty:
@@ -61,15 +63,13 @@ if mode == "📌 Recommend Restaurants":
             filtered_df = filtered_df.sort_values(by="Price_per_Vote")
 
         st.success(f"Found {len(filtered_df)} restaurants")
-        st.dataframe(filtered_df[['Restaurant_Name', 'Place_Name', 'Prices', 'Average_Rating', 'Votes']].head(100))
+        st.dataframe(filtered_df[['Restaurant_Name', 'Place_Name', 'Prices', 'Average_Rating', 'Votes']].head(50))
 
-# --- Mode 2: Price Prediction ---
+# --- Mode 2: Menu Price Predictor ---
 elif mode == "💡 Predict Menu Item Price":
     st.header("💰 Menu Price Predictor")
-    st.markdown("Input restaurant and menu features to predict the expected price (INR).")
 
     col1, col2, col3 = st.columns(3)
-
     with col1:
         dining_rating = st.slider("Dining Rating", 0.0, 5.0, 4.2, 0.1)
         delivery_rating = st.slider("Delivery Rating", 0.0, 5.0, 4.0, 0.1)
@@ -91,7 +91,6 @@ elif mode == "💡 Predict Menu Item Price":
         avg_rating_cuisine = st.slider("Avg Rating of Cuisine", 0.0, 5.0, 4.0, 0.1)
         avg_price_cuisine = st.number_input("Avg Price of Cuisine", 0.0, 1000.0, 300.0)
 
-    # --- Feature Vector ---
     input_features = [[
         dining_rating, delivery_rating, dining_votes, delivery_votes, votes,
         avg_rating, votes, price_per_vote, log_price,
@@ -103,10 +102,30 @@ elif mode == "💡 Predict Menu Item Price":
         1 if is_expensive == "Yes" else 0
     ]]
 
-    # --- Predict Price ---
     scaled_input = price_scaler.transform(input_features)
     prediction = price_model.predict(scaled_input)[0]
 
     st.markdown("---")
     st.subheader("💰 Predicted Menu Price:")
     st.success(f"₹ {prediction:.2f}")
+
+# --- Mode 3: Cuisine Insights Dashboard ---
+elif mode == "📊 Cuisine Insights by City":
+    st.header("📊 Cuisine-City Intelligence Report")
+
+    cuisine = st.selectbox("Select Cuisine", sorted(df['Cuisine'].unique()))
+    city_group = df[df['Cuisine'] == cuisine].groupby("City").agg({
+        "Prices": "mean",
+        "Average_Rating": "mean",
+        "Restaurant_Name": "count"
+    }).rename(columns={
+        "Prices": "Avg Price",
+        "Average_Rating": "Avg Rating",
+        "Restaurant_Name": "No. of Restaurants"
+    }).sort_values(by="No. of Restaurants", ascending=False).head(10)
+
+    st.subheader(f"📍 Top Cities for '{cuisine.title()}' Cuisine")
+    st.dataframe(city_group.style.format({"Avg Price": "{:.2f}", "Avg Rating": "{:.2f}"}))
+
+    st.markdown("---")
+    st.markdown("✅ Use this to decide where to launch or scale restaurants for this cuisine.")
