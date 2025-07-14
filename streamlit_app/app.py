@@ -1,33 +1,45 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import os
 
-# --- Load data and models ---
+# --- Set page config ---
+st.set_page_config(page_title="🍽️ ZomatoX ML App", layout="wide")
+
+# --- Set base directory for relative paths ---
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# --- Load data ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv("..\Data\zomato_clean_processed.csv")
+    data_path = os.path.join(BASE_DIR, "..", "data", "zomato_clean_processed.csv")
+    df = pd.read_csv(data_path)
     df['City'] = df['City'].astype(str).str.strip().str.lower()
     df['Cuisine'] = df['Cuisine'].astype(str).str.strip().str.lower()
     return df
 
+# --- Load ML models ---
 @st.cache_resource
 def load_models():
-    price_model = joblib.load("..\Models\price_predictor_rf.pkl")
-    price_scaler = joblib.load("..\Models\price_scaler.pkl")
+    model_path = os.path.join(BASE_DIR, "..", "models", "price_predictor_rf.pkl")
+    scaler_path = os.path.join(BASE_DIR, "..", "models", "price_scaler.pkl")
+    price_model = joblib.load(model_path)
+    price_scaler = joblib.load(scaler_path)
     return price_model, price_scaler
 
+# --- Load data & models ---
 df = load_data()
 price_model, price_scaler = load_models()
 
 # --- UI Header ---
-st.set_page_config(page_title="🍽️ ZomatoX ML App", layout="wide")
 st.title("🍽️ ZomatoX – Restaurant Intelligence Platform")
 st.markdown("Predict menu prices or explore top restaurants by cuisine and city.")
 
+# --- Sidebar mode selection ---
 st.sidebar.title("🔍 Select Mode")
 mode = st.sidebar.radio("Choose what you want to do:", ["📌 Recommend Restaurants", "💡 Predict Menu Item Price"])
 
-# --- Mode 1: Recommend Restaurants ---
+# --- Mode 1: Restaurant Recommendation ---
 if mode == "📌 Recommend Restaurants":
     st.header("📌 Restaurant Recommender")
 
@@ -35,9 +47,9 @@ if mode == "📌 Recommend Restaurants":
     cuisine_input = st.selectbox("Select Cuisine", sorted(df['Cuisine'].unique()))
     sort_by = st.radio("Sort By", ["Average Rating", "Price (Low to High)", "Best Value"], horizontal=True)
 
-    # Filter
+    # Filter DataFrame
     filtered_df = df[(df['City'] == city_input) & (df['Cuisine'] == cuisine_input)]
-    
+
     if filtered_df.empty:
         st.warning("❌ No restaurants found for the selected city and cuisine.")
     else:
@@ -51,7 +63,7 @@ if mode == "📌 Recommend Restaurants":
         st.success(f"Found {len(filtered_df)} restaurants")
         st.dataframe(filtered_df[['Restaurant_Name', 'Place_Name', 'Prices', 'Average_Rating', 'Votes']].head(10))
 
-# --- Mode 2: Predict Menu Item Price ---
+# --- Mode 2: Price Prediction ---
 elif mode == "💡 Predict Menu Item Price":
     st.header("💰 Menu Price Predictor")
     st.markdown("Input restaurant and menu features to predict the expected price (INR).")
@@ -79,7 +91,7 @@ elif mode == "💡 Predict Menu Item Price":
         avg_rating_cuisine = st.slider("Avg Rating of Cuisine", 0.0, 5.0, 4.0, 0.1)
         avg_price_cuisine = st.number_input("Avg Price of Cuisine", 0.0, 1000.0, 300.0)
 
-    # Features in correct order
+    # --- Feature Vector ---
     input_features = [[
         dining_rating, delivery_rating, dining_votes, delivery_votes, votes,
         avg_rating, votes, price_per_vote, log_price,
@@ -91,10 +103,10 @@ elif mode == "💡 Predict Menu Item Price":
         1 if is_expensive == "Yes" else 0
     ]]
 
+    # --- Predict Price ---
     scaled_input = price_scaler.transform(input_features)
     prediction = price_model.predict(scaled_input)[0]
 
     st.markdown("---")
     st.subheader("💰 Predicted Menu Price:")
     st.success(f"₹ {prediction:.2f}")
-
