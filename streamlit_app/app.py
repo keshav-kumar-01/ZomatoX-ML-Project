@@ -12,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # --- Load data ---
 @st.cache_data
 def load_data():
-    data_path = os.path.join(BASE_DIR, "..", "data", "zomato_clean_processed.csv")
+    data_path = os.path.join(BASE_DIR, "..", "Data", "zomato_clean_processed.csv")
     df = pd.read_csv(data_path)
     df['City'] = df['City'].astype(str).str.strip().str.lower()
     df['Cuisine'] = df['Cuisine'].astype(str).str.strip().str.lower()
@@ -21,8 +21,8 @@ def load_data():
 # --- Load ML models ---
 @st.cache_resource
 def load_models():
-    model_path = os.path.join(BASE_DIR, "..", "models", "price_predictor_rf.pkl")
-    scaler_path = os.path.join(BASE_DIR, "..", "models", "price_scaler.pkl")
+    model_path = os.path.join(BASE_DIR, "..", "Models", "price_predictor_rf.pkl")
+    scaler_path = os.path.join(BASE_DIR, "..", "Models", "price_scaler.pkl")
     price_model = joblib.load(model_path)
     price_scaler = joblib.load(scaler_path)
     return price_model, price_scaler
