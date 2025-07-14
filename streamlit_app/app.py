@@ -61,7 +61,7 @@ if mode == "📌 Recommend Restaurants":
             filtered_df = filtered_df.sort_values(by="Price_per_Vote")
 
         st.success(f"Found {len(filtered_df)} restaurants")
-        st.dataframe(filtered_df[['Restaurant_Name', 'Place_Name', 'Prices', 'Average_Rating', 'Votes']].head(10))
+        st.dataframe(filtered_df[['Restaurant_Name', 'Place_Name', 'Prices', 'Average_Rating', 'Votes']].head(100))
 
 # --- Mode 2: Price Prediction ---
 elif mode == "💡 Predict Menu Item Price":
