@@ -5,15 +5,15 @@ import joblib
 # --- Load data and models ---
 @st.cache_data
 def load_data():
-    df = pd.read_csv("D:\ZomatoX-ML\Data\zomato_clean_processed.csv")
+    df = pd.read_csv("..\ZomatoX-ML\Data\zomato_clean_processed.csv")
     df['City'] = df['City'].astype(str).str.strip().str.lower()
     df['Cuisine'] = df['Cuisine'].astype(str).str.strip().str.lower()
     return df
 
 @st.cache_resource
 def load_models():
-    price_model = joblib.load("D:\ZomatoX-ML\Models\price_predictor_rf.pkl")
-    price_scaler = joblib.load("D:\ZomatoX-ML\Models\price_scaler.pkl")
+    price_model = joblib.load("..\ZomatoX-ML\Models\price_predictor_rf.pkl")
+    price_scaler = joblib.load("..\ZomatoX-ML\Models\price_scaler.pkl")
     return price_model, price_scaler
 
 df = load_data()
